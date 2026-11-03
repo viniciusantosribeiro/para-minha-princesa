@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -178,7 +178,11 @@ h2{color:var(--head);font-size:clamp(2rem,6vw,2.8rem);text-align:center;margin-b
 .tap{font-size:1.6rem;color:var(--soft);margin:1.2rem 0 0;transition:opacity .3s}
 .done .wrap{max-height:0;opacity:0;padding-top:0;overflow:hidden}
 .letter{background:#fff;color:#432f2e;border-radius:6px;max-height:0;opacity:0;overflow:hidden;padding:0 1.8rem;box-shadow:inset 0 0 46px rgba(67,47,46,.1);clip-path:polygon(0 1%,6% 0,12% .8%,19% .1%,26% 1%,33% 0,41% .9%,48% .2%,55% 1.1%,63% 0,70% .8%,78% .2%,86% 1%,93% .1%,100% .9%,99.4% 20%,100% 35%,99.3% 50%,100% 66%,99.5% 80%,100% 99%,93% 100%,86% 99.1%,78% 100%,70% 99%,63% 99.9%,55% 98.9%,48% 100%,41% 99.2%,33% 100%,26% 99%,19% 99.9%,12% 99.1%,6% 100%,0 99.2%,.5% 80%,0 66%,.6% 50%,0 35%,.5% 20%);transition:max-height 1.3s ease .3s,opacity .8s ease .4s,padding .6s ease .3s}
-.done .letter{max-height:1600px;opacity:1;padding:3.2rem 1.8rem 5.4rem}
+.done .letter{
+  max-height:5000px;
+  opacity:1;
+  padding:3.2rem 1.8rem 5.4rem;
+}
 .letter p{margin:0 0 1rem;font-family:"Caveat",cursive;font-size:1.7rem;line-height:1.35;text-align:center}
 .letter .sign{font-size:2.2rem;text-align:center;margin:0}
 
@@ -370,20 +374,19 @@ body{position:relative}
   <h2>E tem mais uma coisa…</h2>
   <button id="btn" type="button" >Abrir meu coração</button>
   <div class="hand" id="final-msg" role="status"></div>
+
+  <div id="final-video-container" class="final-video-container" hidden>
+    <video
+      id="final-video"
+      src="./videos/nosso_video.mp4"
+      loop
+      playsinline
+      controls
+    ></video>
+  </div>
 </section>
 
-<div class="hand" id="final-msg" role="status"></div>
-<div id="final-video-container" class="final-video-container" hidden>
-  <video
-    id="final-video"
-    src="./videos/nosso_video.mp4"
-    autoplay
-    muted
-    loop
-    playsinline
-    controls
-  ></video>
-</div>
+
 
 <script>
 const CONFIG = {
@@ -426,7 +429,7 @@ const CONFIG = {
     "Desde quando te conheci, eu sabia que você era a mulher que eu queria ter ao meu lado, e hoje eu tenho a certeza de que você é a mulher da minha vida, e que eu quero passar o resto da minha vida com você.",
     "Eu te amo minha pretinha, Quero te ter até que o Senhor venha, e até o ultimo dia de minha vida, quero ao seu lado estar.",
   ],
-  cliques: 7,   // toques para abrir o presente
+  cliques: 10,   // toques para abrir o presente
   senha: "03-07-26",   // formato dd-mm-aa
   // Figurinha da abertura: coloque em src (ex.: "data:image/png;base64,..."). Vazio = espaço reservado.
   figurinha: "./images/nosso_dia_especial.jpg",
@@ -544,19 +547,32 @@ const SFX=(()=>{
       }).catch(err=>console.warn("Erro na música:",err));
     },
 
-    stopBackground(){
-      const a=snd.background;
-      const inicio=a.volume;
+   stopBackground(){
+      const a = snd.background;
 
-      const fade=setInterval(()=>{
-        a.volume=Math.max(0,a.volume-0.02);
+      if(!a) return;
 
-        if(a.volume<=0){
-          clearInterval(fade);
+      // Cancela qualquer fade anterior
+      if(a._fade){
+        clearInterval(a._fade);
+        a._fade = null;
+      }
+
+      // Se já estiver parada, não faz nada
+      if(a.paused) return;
+
+      // Fade-out imediato, sem reiniciar a música
+      a._fade = setInterval(()=>{
+        a.volume = Math.max(0, a.volume - 0.025);
+
+        if(a.volume <= 0){
+          clearInterval(a._fade);
+          a._fade = null;
+
           a.pause();
-          a.currentTime=0;
+          a.currentTime = 0;
         }
-      },100);
+      }, 50);
     }
       };
 })();
@@ -1098,27 +1114,58 @@ addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(maybeRebuild,200)}
    12. CHUVA FINAL
    ========================================================== */
 $("btn").addEventListener("click",()=>{
+  SFX.stopBackground();
   const emo=["❤️","💛","🧡","🤎","💖","💗","💕","💝","💘","🩷","🤍","💞","💓","💜"];
   const words=["Meu Amor","Deus","Família","Você","Minha pretinha","Princesa"];
-  const DROPS=[...Array(22).fill({t:"sun"}),...emo.map(v=>({t:"emoji",v})),...emo.map(v=>({t:"emoji",v})),...emo.map(v=>({t:"emoji",v})),...Array(6).fill({t:"emoji",v:"👑"}),...words.map(v=>({t:"word",v})),...words.map(v=>({t:"word",v}))].sort(()=>Math.random()-.5);
+
+  const DROPS=[
+    ...Array(22).fill({t:"sun"}),
+    ...emo.map(v=>({t:"emoji",v})),
+    ...emo.map(v=>({t:"emoji",v})),
+    ...emo.map(v=>({t:"emoji",v})),
+    ...Array(6).fill({t:"emoji",v:"👑"}),
+    ...words.map(v=>({t:"word",v})),
+    ...words.map(v=>({t:"word",v}))
+  ].sort(()=>Math.random()-.5);
+
   $("final-msg").textContent=CONFIG.mensagemFinal;
-  // Mostrar e reproduzir o vídeo
-  const videoContainer = $("final-video-container");
-  const video = $("final-video");
 
-  videoContainer.hidden = false;
+  // Parar música de fundo com fade-out
+  SFX.stopBackground();
 
-  video.currentTime = 0;
-  video.play().catch(()=>{});
+  // Mostrar e reproduzir o vídeo com som
+  const videoContainer=$("final-video-container");
+  const video=$("final-video");
+
+  videoContainer.hidden=false;
+
+  video.muted=false;
+  video.volume=1;
+  video.currentTime=0;
+
+  video.play().catch(err=>{
+    console.warn("Não foi possível reproduzir o vídeo com som:",err);
+  });
+
+  // Chuva final
   for(let i=0;i<100;i++){
     const f=document.createElement("div");
     f.className="fall";
-    const size=28+Math.random()*34, k=DROPS[i%DROPS.length];
+
+    const size=28+Math.random()*34,
+          k=DROPS[i%DROPS.length];
+
     f.innerHTML=k.t==="sun"?sunflower(size):k.v;
-    if(k.t!=="sun"){f.classList.add(k.t==="emoji"?"emo":"txt");f.style.fontSize=(k.t==="emoji"?size:size*(k.v.length>8?.6:.8))+"px"}
+
+    if(k.t!=="sun"){
+      f.classList.add(k.t==="emoji"?"emo":"txt");
+      f.style.fontSize=(k.t==="emoji"?size:size*(k.v.length>8?.6:.8))+"px";
+    }
+
     f.style.left=Math.random()*(k.t==="word"?(k.v.length>8?40:72):94)+"vw";
     f.style.animationDuration=(3.5+Math.random()*3.5)+"s";
     f.style.animationDelay=(Math.random()*1.6)+"s";
+
     document.body.appendChild(f);
     setTimeout(()=>f.remove(),10000);
   }
